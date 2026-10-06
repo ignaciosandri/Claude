@@ -1,6 +1,9 @@
-import * as L from "./logic.js";
-import { load, save, defaultState, isValidBackup, PAYMENT_METHODS } from "./store.js";
-import { renderMonthlyChart, renderCategoryBars, monthLabel } from "./charts.js";
+(function () {
+"use strict";
+
+const L = Logic;
+const { load, save, defaultState, isValidBackup, PAYMENT_METHODS } = Store;
+const { renderMonthlyChart, renderCategoryBars, monthLabel } = Charts;
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -480,3 +483,4 @@ window.addEventListener("resize", () => {
 
 if (runRecurring()) save(state);
 render();
+})();

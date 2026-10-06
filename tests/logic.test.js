@@ -1,6 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import * as L from "../js/logic.js";
+import { readFileSync } from "node:fs";
+
+// logic.js es un script clásico (para abrir index.html sin servidor): se evalúa y se toma el global.
+const L = new Function(readFileSync(new URL("../js/logic.js", import.meta.url), "utf8") + "\nreturn Logic;")();
 
 const cats = [
   { id: "super", name: "Supermercado", icon: "🛒", type: "expense" },

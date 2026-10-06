@@ -5,10 +5,17 @@ HTML + CSS + JavaScript sin dependencias. Los datos se guardan en el navegador (
 
 ## Cómo usarla
 
+**Opción fácil:** abrí `index.html` con doble clic (o clic derecho → *Abrir con* → tu navegador). No hace falta instalar nada.
+
+**Con Node.js** (opcional):
+
 ```bash
 npm start      # http://localhost:5173
 npm test       # tests de la lógica (node:test)
 ```
+
+**Desde VS Code:** clic derecho sobre `index.html` → *Reveal in File Explorer* y abrilo con el navegador,
+o instalá la extensión *Live Server* y usá *Open with Live Server* (se recarga sola al guardar cambios).
 
 Para probar rápido: **Ajustes → Cargar datos de ejemplo**.
 
