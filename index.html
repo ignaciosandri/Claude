@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mis Gastos</title>
+  <meta name="description" content="Tracker de gastos e ingresos personales">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💸</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>💸 Mis Gastos</h1>
+    <div class="month-nav">
+      <button class="icon-btn" id="prev-month" aria-label="Mes anterior">‹</button>
+      <span id="month-label"></span>
+      <button class="icon-btn" id="next-month" aria-label="Mes siguiente">›</button>
+    </div>
+    <button class="icon-btn" id="theme-toggle" aria-label="Cambiar tema" title="Cambiar tema">◐</button>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="resumen" aria-selected="true">Resumen</button>
+    <button role="tab" data-tab="movimientos">Movimientos</button>
+    <button role="tab" data-tab="presupuestos">Presupuestos</button>
+    <button role="tab" data-tab="ajustes">Ajustes</button>
+  </nav>
+
+  <main>
+    <!-- RESUMEN -->
+    <section id="tab-resumen" class="tab-panel">
+      <div class="kpis">
+        <div class="kpi"><span>Ingresos</span><strong id="kpi-income"></strong></div>
+        <div class="kpi"><span>Gastos</span><strong id="kpi-expense"></strong><small id="kpi-projection"></small></div>
+        <div class="kpi"><span>Balance</span><strong id="kpi-balance"></strong></div>
+        <div class="kpi"><span>Tasa de ahorro</span><strong id="kpi-savings"></strong></div>
+      </div>
+
+      <ul id="insights" class="insights"></ul>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <h2>Últimos 6 meses</h2>
+            <div class="legend">
+              <span><i class="sw income"></i>Ingresos</span>
+              <span><i class="sw expense"></i>Gastos</span>
+            </div>
+          </div>
+          <div id="monthly-chart" class="chart"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Gastos por categoría</h2></div>
+          <div id="category-bars"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Últimos movimientos</h2>
+          <button class="link-btn" data-goto="movimientos">Ver todos →</button>
+        </div>
+        <ul id="recent-list" class="tx-list"></ul>
+      </div>
+    </section>
+
+    <!-- MOVIMIENTOS -->
+    <section id="tab-movimientos" class="tab-panel" hidden>
+      <div class="filters">
+        <input type="search" id="f-query" placeholder="Buscar descripción…" aria-label="Buscar">
+        <select id="f-type" aria-label="Tipo">
+          <option value="">Todos</option>
+          <option value="expense">Gastos</option>
+          <option value="income">Ingresos</option>
+        </select>
+        <select id="f-category" aria-label="Categoría"></select>
+        <select id="f-method" aria-label="Medio de pago"></select>
+      </div>
+      <p id="filter-summary" class="muted"></p>
+      <div id="tx-groups"></div>
+    </section>
+
+    <!-- PRESUPUESTOS -->
+    <section id="tab-presupuestos" class="tab-panel" hidden>
+      <div class="card">
+        <div class="card-head"><h2>Presupuesto mensual por categoría</h2></div>
+        <p class="muted">Definí un tope por categoría. Te avisamos al llegar al 80% y al pasarte.</p>
+        <div id="budget-total" class="budget-total"></div>
+        <div id="budget-list"></div>
+      </div>
+    </section>
+
+    <!-- AJUSTES -->
+    <section id="tab-ajustes" class="tab-panel" hidden>
+      <div class="grid-2">
+        <div class="card">
+          <h2>Preferencias</h2>
+          <label class="field">Moneda
+            <select id="s-currency">
+              <option value="ARS">Peso argentino (ARS)</option>
+              <option value="USD">Dólar (USD)</option>
+              <option value="EUR">Euro (EUR)</option>
+              <option value="UYU">Peso uruguayo (UYU)</option>
+              <option value="CLP">Peso chileno (CLP)</option>
+              <option value="MXN">Peso mexicano (MXN)</option>
+            </select>
+          </label>
+          <label class="field">Tema
+            <select id="s-theme">
+              <option value="auto">Automático</option>
+              <option value="light">Claro</option>
+              <option value="dark">Oscuro</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="card">
+          <h2>Datos</h2>
+          <div class="btn-row">
+            <button class="btn" id="export-csv">Exportar CSV</button>
+            <button class="btn" id="export-json">Backup JSON</button>
+            <label class="btn">Importar CSV/JSON<input type="file" id="import-file" accept=".csv,.json" hidden></label>
+          </div>
+          <div class="btn-row">
+            <button class="btn" id="load-demo">Cargar datos de ejemplo</button>
+            <button class="btn danger" id="clear-all">Borrar todo</button>
+          </div>
+          <p class="muted small">Los datos se guardan sólo en este navegador. Hacé backups seguido.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Categorías</h2>
+        <form id="cat-form" class="inline-form">
+          <input id="cat-icon" maxlength="4" placeholder="🙂" aria-label="Ícono" class="emoji-input">
+          <input id="cat-name" placeholder="Nueva categoría" required aria-label="Nombre">
+          <select id="cat-type" aria-label="Tipo">
+            <option value="expense">Gasto</option>
+            <option value="income">Ingreso</option>
+          </select>
+          <button class="btn primary">Agregar</button>
+        </form>
+        <div id="cat-list" class="chips"></div>
+      </div>
+
+      <div class="card">
+        <h2>Movimientos recurrentes</h2>
+        <p class="muted">Se cargan solos cada mes (alquiler, sueldo, suscripciones…). Creálos tildando “Repetir todos los meses” al cargar un movimiento.</p>
+        <ul id="recurring-list" class="tx-list"></ul>
+      </div>
+    </section>
+  </main>
+
+  <button class="fab" id="add-btn" aria-label="Nuevo movimiento" title="Nuevo movimiento (N)">＋</button>
+
+  <dialog id="tx-dialog">
+    <form id="tx-form" method="dialog">
+      <h2 id="tx-title">Nuevo movimiento</h2>
+      <div class="segmented" role="radiogroup" aria-label="Tipo">
+        <label><input type="radio" name="type" value="expense" checked><span>Gasto</span></label>
+        <label><input type="radio" name="type" value="income"><span>Ingreso</span></label>
+      </div>
+      <label class="field">Monto
+        <input name="amount" type="number" inputmode="decimal" step="0.01" min="0.01" required autofocus>
+      </label>
+      <div class="row-2">
+        <label class="field">Fecha <input name="date" type="date" required></label>
+        <label class="field">Medio de pago <select name="method"></select></label>
+      </div>
+      <label class="field">Categoría <select name="categoryId" required></select></label>
+      <label class="field">Descripción <input name="description" maxlength="80" placeholder="Ej: compra semanal"></label>
+      <label class="check"><input type="checkbox" name="repeat"> Repetir todos los meses</label>
+      <div class="dialog-actions">
+        <button type="button" class="btn danger" id="tx-delete" hidden>Eliminar</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn" id="tx-cancel">Cancelar</button>
+        <button class="btn primary" value="save">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="tooltip" class="tooltip" hidden></div>
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+# 💸 Mis Gastos
+
+Tracker de finanzas personales: gastos, ingresos, presupuestos y movimientos recurrentes.
+HTML + CSS + JavaScript sin dependencias. Los datos se guardan en el navegador (`localStorage`).
+
+## Cómo usarla
+
+```bash
+npm start      # http://localhost:5173
+npm test       # tests de la lógica (node:test)
+```
+
+Para probar rápido: **Ajustes → Cargar datos de ejemplo**.
+
+## Qué tiene
+
+- **Resumen mensual**: ingresos, gastos, balance, tasa de ahorro y proyección de gasto a fin de mes
+  (los gastos fijos cuentan una vez y sólo el gasto variable se extrapola).
+- **Insights automáticos**: comparación con el mes anterior, categoría con más gasto, alerta si vas a gastar más de lo que ingresó.
+- **Gráficos**: ingresos vs. gastos de los últimos 6 meses (con tooltip) y gasto por categoría.
+- **Movimientos**: alta/edición/borrado, agrupados por día, con búsqueda y filtros por tipo, categoría y medio de pago.
+- **Presupuestos** por categoría con aviso al 80% y al pasarse.
+- **Recurrentes**: tildá “Repetir todos los meses” y se cargan solos (sueldo, alquiler, suscripciones…).
+- **Categorías** editables (con emoji) para gastos e ingresos.
+- **Exportar/importar** CSV (compatible con Excel/Sheets) y backup/restauración JSON.
+- Multi-moneda (ARS, USD, EUR, UYU, CLP, MXN), modo oscuro, diseño mobile-first, atajo de teclado `N`.
+
+## Estructura
+
+```
+index.html        UI
+css/styles.css    estilos (tokens claro/oscuro)
+js/logic.js       lógica pura y testeable (filtros, totales, presupuestos, recurrentes, CSV)
+js/store.js       persistencia en localStorage
+js/charts.js      gráficos SVG
+js/app.js         render y eventos
+tests/            tests de js/logic.js
+server.js         servidor estático para desarrollo
+```
+
+## Roadmap sugerido
+
+**Prioridad alta**
+1. **Cuentas y saldos**: billeteras/cuentas (banco, efectivo, billetera virtual) con saldo y transferencias entre ellas.
+2. **Tarjeta de crédito y cuotas**: cargar una compra en N cuotas, ver el resumen a pagar por mes y la fecha de cierre.
+3. **Multi-moneda real (ARS/USD)**: guardar la moneda de cada movimiento y convertir con la cotización del día (oficial/MEP/blue).
+4. **PWA instalable y offline** en el celular, con recordatorio diario para cargar gastos.
+5. **Sincronización y backup en la nube** (Supabase/Firebase) para usarla en varios dispositivos.
+
+**Prioridad media**
+6. **Metas de ahorro** (viaje, fondo de emergencia) con progreso y aporte mensual sugerido.
+7. **Importar resúmenes del banco** (CSV/PDF) con categorización automática por reglas (“si dice UBER → Transporte”).
+8. **Ajuste por inflación**: ver gastos en pesos constantes con el IPC para comparar meses de verdad.
+9. **Etiquetas** además de categorías (#vacaciones, #regalos) y adjuntar foto del ticket.
+10. **Informe anual** y comparación año contra año.
+
+**Ideas extra**
+11. Carga rápida por texto o voz (“café 3500 débito”) con IA.
+12. Gastos compartidos (dividir con pareja o amigos, quién le debe a quién).
+13. Detector de suscripciones olvidadas y gastos “hormiga”.
+14. Alertas de vencimientos (servicios, tarjeta, impuestos).
