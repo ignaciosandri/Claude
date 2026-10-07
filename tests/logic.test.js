@@ -126,3 +126,37 @@ test("insights avisa cuando el gasto sube respecto del mes anterior", () => {
   const ins = L.insights(more, cats, "2026-10", "2026-10-31");
   assert.ok(ins.some((i) => i.kind === "up" && i.text.includes("100% más")));
 });
+
+test("buildInstallments reparte el total y ajusta el redondeo en la última cuota", () => {
+  const base = { type: "expense", amount: 1000, categoryId: "super", description: "Heladera", method: "Crédito", date: "2026-11-30" };
+  const cuotas = L.buildInstallments(base, 3);
+  assert.deepEqual(cuotas.map((t) => t.amount), [333.33, 333.33, 333.34]);
+  assert.deepEqual(cuotas.map((t) => t.date), ["2026-11-30", "2026-12-30", "2027-01-30"]);
+  assert.deepEqual(cuotas.map((t) => `${t.plan.n}/${t.plan.of}`), ["1/3", "2/3", "3/3"]);
+  assert.equal(new Set(cuotas.map((t) => t.plan.id)).size, 1);
+  assert.equal(new Set(cuotas.map((t) => t.id)).size, 3);
+  // Día 31 en meses más cortos.
+  const feb = L.buildInstallments({ ...base, date: "2027-01-31" }, 2);
+  assert.deepEqual(feb.map((t) => t.date), ["2027-01-31", "2027-02-28"]);
+});
+
+test("installmentPlans y upcomingInstallments miran sólo lo que falta pagar", () => {
+  const base = { type: "expense", categoryId: "super", description: "Tele", method: "Crédito" };
+  const a = L.buildInstallments({ ...base, amount: 600, date: "2026-09-10" }, 6);
+  const b = L.buildInstallments({ ...base, amount: 300, date: "2026-07-01" }, 3); // ya terminada
+  const all = [...a, ...b, ...txs];
+  const plans = L.installmentPlans(all, "2026-10-07");
+  assert.equal(plans.length, 1);
+  assert.deepEqual(
+    { paid: plans[0].paid, of: plans[0].of, remaining: plans[0].remaining, next: plans[0].next },
+    { paid: 1, of: 6, remaining: 500, next: "2026-10-10" },
+  );
+  const up = L.upcomingInstallments(all, "2026-10-07", 4);
+  assert.deepEqual(up.map((m) => [m.month, m.total]), [["2026-11", 100], ["2026-12", 100], ["2027-01", 100], ["2027-02", 100]]);
+});
+
+test("las cuotas cuentan como gasto fijo en la proyección y se marcan en el CSV", () => {
+  const cuotas = L.buildInstallments({ type: "expense", amount: 300, categoryId: "super", description: "Tele", method: "Crédito", date: "2026-10-01" }, 3);
+  assert.equal(L.projectMonth([cuotas[0]], "2026-10", "2026-10-10"), 100);
+  assert.match(L.toCSV(cuotas, cats), /Tele \(cuota 2\/3\)/);
+});

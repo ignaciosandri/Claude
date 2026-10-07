@@ -55,6 +55,23 @@
         </div>
       </div>
 
+      <div class="card" id="installments-card" hidden>
+        <div class="card-head">
+          <h2>💳 Cuotas pendientes</h2>
+          <span class="muted small" id="installments-total"></span>
+        </div>
+        <div class="grid-2 tight">
+          <div>
+            <h3>Próximos meses</h3>
+            <div id="installments-months"></div>
+          </div>
+          <div>
+            <h3>Compras activas</h3>
+            <ul id="installments-plans" class="tx-list"></ul>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-head">
           <h2>Últimos movimientos</h2>
@@ -167,9 +184,23 @@
         <label class="field">Fecha <input name="date" type="date" required></label>
         <label class="field">Medio de pago <select name="method"></select></label>
       </div>
+      <div class="field" id="installments-field" hidden>
+        <label for="tx-installments">Cuotas</label>
+        <select name="installments" id="tx-installments">
+          <option value="1">En un pago</option>
+          <option value="2">2 cuotas</option>
+          <option value="3">3 cuotas</option>
+          <option value="6">6 cuotas</option>
+          <option value="9">9 cuotas</option>
+          <option value="12">12 cuotas</option>
+          <option value="18">18 cuotas</option>
+          <option value="24">24 cuotas</option>
+        </select>
+        <small id="installments-hint" class="hint"></small>
+      </div>
       <label class="field">Categoría <select name="categoryId" required></select></label>
       <label class="field">Descripción <input name="description" maxlength="80" placeholder="Ej: compra semanal"></label>
-      <label class="check"><input type="checkbox" name="repeat"> Repetir todos los meses</label>
+      <label class="check" id="repeat-field"><input type="checkbox" name="repeat"> Repetir todos los meses</label>
       <div class="dialog-actions">
         <button type="button" class="btn danger" id="tx-delete" hidden>Eliminar</button>
         <span class="spacer"></span>

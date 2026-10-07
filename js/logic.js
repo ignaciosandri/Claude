@@ -111,7 +111,7 @@ var Logic = (function () {
     let variable = 0;
     for (const t of monthTxs) {
       if (t.type !== "expense") continue;
-      if (t.recurringId) fixed += t.amount;
+      if (t.recurringId || t.plan) fixed += t.amount;
       else variable += t.amount;
     }
     return fixed + (variable / day) * daysInMonth(month);
@@ -183,6 +183,62 @@ var Logic = (function () {
     return { newTxs, recurring: updated };
   }
 
+  // ---------- Cuotas ----------
+
+  // Divide una compra en cuotas mensuales: la primera cae en el mes de la compra y
+  // la última absorbe el redondeo para que la suma dé exacto el total.
+  function buildInstallments(base, count) {
+    const cents = Math.round(base.amount * 100);
+    const per = Math.floor(cents / count);
+    const planId = uid();
+    const start = monthKey(base.date);
+    const day = Number(base.date.slice(8, 10));
+    return Array.from({ length: count }, (_, i) => {
+      const m = addMonths(start, i);
+      const amount = (i === count - 1 ? cents - per * (count - 1) : per) / 100;
+      return {
+        ...base,
+        id: uid(),
+        createdAt: Date.now(),
+        amount,
+        date: `${m}-${String(Math.min(day, daysInMonth(m))).padStart(2, "0")}`,
+        plan: { id: planId, n: i + 1, of: count, total: base.amount, date: base.date },
+      };
+    });
+  }
+
+  // Compras en cuotas que todavía tienen cuotas por pagar después de hoy.
+  function installmentPlans(txs, today) {
+    const plans = new Map();
+    for (const t of txs) {
+      if (!t.plan) continue;
+      let p = plans.get(t.plan.id);
+      if (!p) {
+        p = { id: t.plan.id, description: t.description, categoryId: t.categoryId, total: t.plan.total,
+          of: t.plan.of, paid: 0, remaining: 0, next: null };
+        plans.set(t.plan.id, p);
+      }
+      if (t.date <= today) p.paid++;
+      else {
+        p.remaining += t.amount;
+        if (!p.next || t.date < p.next) p.next = t.date;
+      }
+    }
+    return [...plans.values()].filter((p) => p.remaining > 0).sort((a, b) => (a.next < b.next ? -1 : 1));
+  }
+
+  // Total de cuotas a pagar en cada uno de los próximos meses (sin contar el actual).
+  function upcomingInstallments(txs, today, count = 6) {
+    const cur = monthKey(today);
+    const months = Array.from({ length: count }, (_, i) => ({ month: addMonths(cur, i + 1), total: 0 }));
+    const byMonth = new Map(months.map((m) => [m.month, m]));
+    for (const t of txs) {
+      const row = t.plan && byMonth.get(monthKey(t.date));
+      if (row) row.total += t.amount;
+    }
+    return months;
+  }
+
   // ---------- CSV ----------
 
   const CSV_HEADER = ["fecha", "tipo", "categoria", "descripcion", "medio", "monto"];
@@ -196,8 +252,9 @@ var Logic = (function () {
     const rows = [CSV_HEADER.join(",")];
     for (const t of [...txs].sort((a, b) => (a.date < b.date ? -1 : 1))) {
       const cat = categories.find((c) => c.id === t.categoryId);
+      const desc = t.plan ? `${t.description || cat?.name || ""} (cuota ${t.plan.n}/${t.plan.of})` : t.description;
       rows.push(
-        [t.date, t.type === "income" ? "ingreso" : "gasto", cat?.name || "", t.description, t.method, t.amount]
+        [t.date, t.type === "income" ? "ingreso" : "gasto", cat?.name || "", desc, t.method, t.amount]
           .map(csvCell)
           .join(","),
       );
@@ -278,5 +335,5 @@ var Logic = (function () {
     return { txs, newCategories };
   }
 
-  return { uid, monthKey, todayISO, addMonths, daysInMonth, filterTransactions, summarize, byCategory, monthlySeries, budgetStatus, projectMonth, insights, generateRecurring, toCSV, parseCSV, resolveImport };
+  return { uid, monthKey, todayISO, addMonths, daysInMonth, filterTransactions, summarize, byCategory, monthlySeries, budgetStatus, projectMonth, insights, generateRecurring, buildInstallments, installmentPlans, upcomingInstallments, toCSV, parseCSV, resolveImport };
 })();

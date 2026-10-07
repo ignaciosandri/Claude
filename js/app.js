@@ -13,6 +13,7 @@ const today = L.todayISO();
 let month = L.monthKey(today);
 let tab = "resumen";
 let editingId = null;
+const MAX_FUTURE_MONTHS = 24; // para ver cuotas que vienen
 
 // ---------- helpers ----------
 
@@ -78,7 +79,7 @@ function txItem(t, { showDate = false } = {}) {
     <li class="tx" data-id="${t.id}" tabindex="0" role="button" aria-label="Editar ${esc(t.description || c.name)}">
       <span class="tx-icon">${c.icon}</span>
       <span class="tx-main">
-        <span class="tx-desc">${esc(t.description || c.name)}${t.recurringId ? ' <span class="badge" title="Recurrente">↻</span>' : ""}</span>
+        <span class="tx-desc">${esc(t.description || c.name)}${t.recurringId ? ' <span class="badge" title="Recurrente">↻</span>' : ""}${t.plan ? ` <span class="badge plan" title="Cuota ${t.plan.n} de ${t.plan.of}">${t.plan.n}/${t.plan.of}</span>` : ""}</span>
         <span class="tx-meta">${esc(c.name)}${t.method ? " · " + esc(t.method) : ""}${showDate ? " · " + fmtDate(t.date) : ""}</span>
       </span>
       <span class="tx-amount ${t.type}">${sign}${fmt(t.amount)}</span>
@@ -90,7 +91,7 @@ function txItem(t, { showDate = false } = {}) {
 function render() {
   applyTheme();
   $("#month-label").textContent = monthLabel(month, true);
-  $("#next-month").disabled = month >= L.monthKey(today);
+  $("#next-month").disabled = month >= L.addMonths(L.monthKey(today), MAX_FUTURE_MONTHS);
   $$(".tabs [role=tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
   $$(".tab-panel").forEach((p) => (p.hidden = p.id !== `tab-${tab}`));
   ({ resumen: renderSummary, movimientos: renderTransactions, presupuestos: renderBudgets, ajustes: renderSettings })[tab]();
@@ -106,7 +107,7 @@ function renderSummary() {
   bal.className = s.balance < 0 ? "neg" : "";
   $("#kpi-savings").textContent = s.savingsRate === null ? "—" : `${Math.round(s.savingsRate * 100)}%`;
   const proj = L.projectMonth(monthTxs, month, today);
-  $("#kpi-projection").textContent = proj ? `Proyección del mes: ${fmt(proj)}` : "";
+  $("#kpi-projection").textContent = proj ? `Proyección del mes: ${fmt(Math.round(proj))}` : "";
 
   const ins = L.insights(state.transactions, state.categories, month, today);
   const icon = { up: "▲", down: "▼", info: "●" };
@@ -115,10 +116,47 @@ function renderSummary() {
   renderMonthlyChart($("#monthly-chart"), L.monthlySeries(state.transactions, month, 6), fmt, tooltip);
   renderCategoryBars($("#category-bars"), L.byCategory(monthTxs, state.categories), fmt, esc);
 
+  renderInstallments();
+
   const recent = monthTxs.slice(0, 6);
   $("#recent-list").innerHTML = recent.length
     ? recent.map((t) => txItem(t, { showDate: true })).join("")
     : `<li class="empty">Sin movimientos en ${monthLabel(month, true)}. Tocá ＋ para cargar el primero.</li>`;
+}
+
+function renderInstallments() {
+  const plans = L.installmentPlans(state.transactions, today);
+  $("#installments-card").hidden = !plans.length;
+  if (!plans.length) return;
+
+  const totalPending = plans.reduce((a, p) => a + p.remaining, 0);
+  $("#installments-total").textContent = `Total a pagar: ${fmt(totalPending)}`;
+
+  const months = L.upcomingInstallments(state.transactions, today, 6);
+  const max = Math.max(...months.map((m) => m.total), 1);
+  $("#installments-months").innerHTML = months
+    .map((m) => `<div class="cat-row">
+        <span class="cat-name">${monthLabel(m.month)}</span>
+        <span class="cat-track"><span class="cat-fill" style="width:${(m.total / max) * 100}%"></span></span>
+        <span class="cat-value">${fmt(m.total)}</span>
+      </div>`)
+    .join("");
+
+  $("#installments-plans").innerHTML = plans
+    .map((p) => {
+      const c = cat(p.categoryId);
+      const next = state.transactions.find((t) => t.plan?.id === p.id && t.date === p.next);
+      return `<li class="tx" data-id="${next.id}" tabindex="0" role="button" aria-label="Editar ${esc(p.description || c.name)}">
+        <span class="tx-icon">${c.icon}</span>
+        <span class="tx-main">
+          <span class="tx-desc">${esc(p.description || c.name)}</span>
+          <span class="tx-meta">${p.paid}/${p.of} pagas · total ${fmt(p.total)}</span>
+          <span class="plan-progress"><span style="width:${(p.paid / p.of) * 100}%"></span></span>
+        </span>
+        <span class="tx-amount">${fmt(p.remaining)}<small class="amount-label">resta</small></span>
+      </li>`;
+    })
+    .join("");
 }
 
 function fillSelect(sel, options, value, placeholder) {
@@ -222,19 +260,39 @@ function fillCategoryOptions(type, selected) {
   if (!sel.value && sel.options.length) sel.selectedIndex = 0;
 }
 
+function installmentsEnabled() {
+  const f = $("#tx-form");
+  return f.type.value === "expense" && f.method.value === "Crédito";
+}
+
+function updateInstallmentsUI() {
+  const f = $("#tx-form");
+  const enabled = installmentsEnabled();
+  const n = enabled ? Number(f.installments.value) : 1;
+  $("#installments-field").hidden = !enabled;
+  $("#repeat-field").hidden = n > 1;
+  const amount = Number(f.amount.value);
+  $("#installments-hint").textContent = n > 1 && amount > 0 && f.date.value
+    ? `${n} cuotas de ${fmt(Math.round((amount / n) * 100) / 100)} · la primera en ${monthLabel(L.monthKey(f.date.value), true).toLowerCase()}`
+    : "";
+}
+
 function openForm(tx = null) {
   const form = $("#tx-form");
   form.reset();
   editingId = tx?.id || null;
   const type = tx?.type || "expense";
   form.type.value = type;
-  form.amount.value = tx?.amount ?? "";
-  form.date.value = tx?.date || (month === L.monthKey(today) ? today : `${month}-01`);
+  // Una compra en cuotas se edita entera: monto total, fecha de compra y cantidad de cuotas.
+  form.amount.value = tx?.plan ? tx.plan.total : tx?.amount ?? "";
+  form.date.value = tx?.plan ? tx.plan.date : tx?.date || (month === L.monthKey(today) ? today : `${month}-01`);
   form.description.value = tx?.description || "";
   fillSelect(form.method, PAYMENT_METHODS.map((m) => [m, m]), tx?.method || "Débito");
   fillCategoryOptions(type, tx?.categoryId);
   form.repeat.checked = Boolean(tx?.recurringId && state.recurring.some((r) => r.id === tx.recurringId));
-  $("#tx-title").textContent = tx ? "Editar movimiento" : "Nuevo movimiento";
+  form.installments.value = String(tx?.plan?.of || 1);
+  updateInstallmentsUI();
+  $("#tx-title").textContent = tx?.plan ? "Editar compra en cuotas" : tx ? "Editar movimiento" : "Nuevo movimiento";
   $("#tx-delete").hidden = !tx;
   $("#tx-dialog").showModal();
 }
@@ -252,9 +310,28 @@ function submitForm() {
     method: f.method.value,
   };
 
+  const n = installmentsEnabled() ? Number(f.installments.value) : 1;
+  let old = editingId ? state.transactions.find((t) => t.id === editingId) : null;
+
+  if (old?.plan) {
+    state.transactions = state.transactions.filter((t) => t.plan?.id !== old.plan.id);
+    old = null;
+  }
+  if (n > 1) {
+    if (old) {
+      state.transactions = state.transactions.filter((t) => t.id !== old.id);
+      state.recurring = state.recurring.filter((r) => r.id !== old.recurringId);
+    }
+    state.transactions.push(...L.buildInstallments(data, n));
+    $("#tx-dialog").close();
+    persist();
+    toast(`Compra en ${n} cuotas guardada`);
+    return;
+  }
+
   let tx;
-  if (editingId) {
-    tx = state.transactions.find((t) => t.id === editingId);
+  if (old) {
+    tx = old;
     Object.assign(tx, data);
   } else {
     tx = { id: L.uid(), createdAt: Date.now(), ...data };
@@ -303,7 +380,6 @@ function demoData() {
   const add = (date, type, categoryId, amount, description, method) =>
     s.transactions.push({ id: L.uid(), createdAt: Date.now(), date, type, categoryId, amount, description, method });
   const cur = L.monthKey(today);
-  const todayDay = Number(today.slice(8, 10));
   // Los fijos se cargan como recurrentes, así la demo también muestra esa función.
   const start = L.addMonths(cur, -3);
   const rec = (type, categoryId, amount, description, method, day) =>
@@ -313,7 +389,8 @@ function demoData() {
   rec("expense", "suscripciones", 15000, "Streaming", "Crédito", 5);
   for (let i = 3; i >= 0; i--) {
     const m = L.addMonths(cur, -i);
-    const lastDay = i === 0 ? todayDay : L.daysInMonth(m);
+    // Lo que caiga después de hoy se descarta abajo, así el mes en curso queda realista.
+    const lastDay = L.daysInMonth(m);
     const d = (n) => `${m}-${String(Math.max(1, Math.min(n, lastDay))).padStart(2, "0")}`;
     if (i % 2 === 0) add(d(15), "income", "freelance", rand(150000, 300000), "Proyecto web", "Transferencia");
     add(d(10), "expense", "servicios", rand(40000, 70000), "Luz, gas e internet", "Débito");
@@ -325,6 +402,14 @@ function demoData() {
     if (i === 0) add(d(12), "expense", "salud", 32000, "Farmacia", "Débito");
   }
   s.transactions = s.transactions.filter((t) => t.date <= today);
+  const plan = (monthsAgo, amount, count, categoryId, description) =>
+    s.transactions.push(...L.buildInstallments(
+      { type: "expense", amount, categoryId, description, method: "Crédito", date: `${L.addMonths(cur, -monthsAgo)}-04` },
+      count,
+    ));
+  plan(2, 900000, 6, "vivienda", "Heladera");
+  plan(0, 1440000, 12, "educacion", "Notebook");
+  plan(1, 180000, 3, "ropa", "Campera");
   s.budgets = { supermercado: 300000, comida: 100000, entretenimiento: 40000, transporte: 35000 };
   return s;
 }
@@ -364,14 +449,23 @@ document.addEventListener("keydown", (e) => {
 });
 
 $$("#tx-form [name=type]").forEach((r) => r.addEventListener("change", () => fillCategoryOptions(r.value)));
+["type", "method", "installments", "amount", "date"].forEach((name) =>
+  $$(`#tx-form [name=${name}]`).forEach((el) => el.addEventListener(name === "amount" ? "input" : "change", updateInstallmentsUI)),
+);
 $("#tx-form").addEventListener("submit", (e) => {
   e.preventDefault();
   submitForm();
 });
 $("#tx-cancel").addEventListener("click", () => $("#tx-dialog").close());
 $("#tx-delete").addEventListener("click", () => {
-  if (!confirm("¿Eliminar este movimiento?")) return;
-  state.transactions = state.transactions.filter((t) => t.id !== editingId);
+  const tx = state.transactions.find((t) => t.id === editingId);
+  if (tx?.plan) {
+    if (!confirm(`¿Eliminar la compra completa (${tx.plan.of} cuotas)?`)) return;
+    state.transactions = state.transactions.filter((t) => t.plan?.id !== tx.plan.id);
+  } else {
+    if (!confirm("¿Eliminar este movimiento?")) return;
+    state.transactions = state.transactions.filter((t) => t.id !== editingId);
+  }
   $("#tx-dialog").close();
   persist();
   toast("Movimiento eliminado");

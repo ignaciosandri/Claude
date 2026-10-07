@@ -26,6 +26,9 @@ Para probar rápido: **Ajustes → Cargar datos de ejemplo**.
 - **Insights automáticos**: comparación con el mes anterior, categoría con más gasto, alerta si vas a gastar más de lo que ingresó.
 - **Gráficos**: ingresos vs. gastos de los últimos 6 meses (con tooltip) y gasto por categoría.
 - **Movimientos**: alta/edición/borrado, agrupados por día, con búsqueda y filtros por tipo, categoría y medio de pago.
+- **Compras en cuotas** con tarjeta de crédito: elegís 2 a 24 cuotas, cada cuota cae en su mes
+  y el resumen muestra cuánto tenés comprometido en los próximos meses y qué compras siguen activas.
+  Podés navegar a meses futuros para ver qué cuotas vienen.
 - **Presupuestos** por categoría con aviso al 80% y al pasarse.
 - **Recurrentes**: tildá “Repetir todos los meses” y se cargan solos (sueldo, alquiler, suscripciones…).
 - **Categorías** editables (con emoji) para gastos e ingresos.
@@ -49,7 +52,7 @@ server.js         servidor estático para desarrollo
 
 **Prioridad alta**
 1. **Cuentas y saldos**: billeteras/cuentas (banco, efectivo, billetera virtual) con saldo y transferencias entre ellas.
-2. **Tarjeta de crédito y cuotas**: cargar una compra en N cuotas, ver el resumen a pagar por mes y la fecha de cierre.
+2. ~~Compras en cuotas~~ ✅. Próximo paso: **fecha de cierre y vencimiento de la tarjeta** (que la primera cuota caiga en el resumen correcto) y varias tarjetas.
 3. **Multi-moneda real (ARS/USD)**: guardar la moneda de cada movimiento y convertir con la cotización del día (oficial/MEP/blue).
 4. **PWA instalable y offline** en el celular, con recordatorio diario para cargar gastos.
 5. **Sincronización y backup en la nube** (Supabase/Firebase) para usarla en varios dispositivos.
