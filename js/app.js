@@ -573,6 +573,28 @@ window.addEventListener("resize", () => {
   resizeTimer = setTimeout(() => tab === "resumen" && renderSummary(), 150);
 });
 
+// ---------- app instalable (PWA) ----------
+
+// Sólo funciona servida por http(s); abriendo index.html desde el disco se omite.
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+
+let installPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  installPrompt = e;
+  $("#install-box").hidden = false;
+});
+$("#install-app").addEventListener("click", async () => {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  await installPrompt.userChoice;
+  installPrompt = null;
+  $("#install-box").hidden = true;
+});
+window.addEventListener("appinstalled", () => toast("¡App instalada! Ya la tenés en tu escritorio."));
+
 // ---------- inicio ----------
 
 if (runRecurring()) save(state);

@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mis Gastos</title>
   <meta name="description" content="Tracker de gastos e ingresos personales">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💸</text></svg>">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#2a78d6">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -143,6 +146,9 @@
             <button class="btn danger" id="clear-all">Borrar todo</button>
           </div>
           <p class="muted small">Los datos se guardan sólo en este navegador. Hacé backups seguido.</p>
+          <div id="install-box" hidden>
+            <button class="btn primary" id="install-app">⬇ Instalar como app de escritorio</button>
+          </div>
         </div>
       </div>
 

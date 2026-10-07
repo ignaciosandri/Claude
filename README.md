@@ -3,6 +3,19 @@
 Tracker de finanzas personales: gastos, ingresos, presupuestos y movimientos recurrentes.
 HTML + CSS + JavaScript sin dependencias. Los datos se guardan en el navegador (`localStorage`).
 
+## Instalarla como app de escritorio
+
+La app es instalable (PWA): queda con su ícono, abre en su propia ventana, funciona sin internet
+y se actualiza sola.
+
+1. Publicala con GitHub Pages (una sola vez): en el repo, **Settings → Pages → Build and deployment**,
+   *Source*: **Deploy from a branch**, rama `claude/personal-expense-tracker-2vvg6n`, carpeta `/ (root)` → **Save**.
+2. Abrí **https://ignaciosandri.github.io/Claude/** con Chrome o Edge.
+3. Tocá el ícono de instalar en la barra de direcciones (o **Ajustes → Instalar como app de escritorio**).
+
+> Los datos se guardan por navegador y por dirección: lo que cargaste abriendo `index.html` desde el disco
+> no aparece en la app instalada. Para pasarlos: **Ajustes → Backup JSON** en uno e **Importar** en el otro.
+
 ## Cómo usarla
 
 **Opción fácil:** abrí `index.html` con doble clic (o clic derecho → *Abrir con* → tu navegador). No hace falta instalar nada.
@@ -46,6 +59,7 @@ js/charts.js      gráficos SVG
 js/app.js         render y eventos
 tests/            tests de js/logic.js
 server.js         servidor estático para desarrollo
+manifest.webmanifest, sw.js, icons/   app instalable y uso sin conexión
 ```
 
 ## Roadmap sugerido
@@ -54,7 +68,7 @@ server.js         servidor estático para desarrollo
 1. **Cuentas y saldos**: billeteras/cuentas (banco, efectivo, billetera virtual) con saldo y transferencias entre ellas.
 2. ~~Compras en cuotas~~ ✅. Próximo paso: **fecha de cierre y vencimiento de la tarjeta** (que la primera cuota caiga en el resumen correcto) y varias tarjetas.
 3. **Multi-moneda real (ARS/USD)**: guardar la moneda de cada movimiento y convertir con la cotización del día (oficial/MEP/blue).
-4. **PWA instalable y offline** en el celular, con recordatorio diario para cargar gastos.
+4. ~~App instalable y offline~~ ✅. Próximo paso: recordatorio diario para cargar gastos.
 5. **Sincronización y backup en la nube** (Supabase/Firebase) para usarla en varios dispositivos.
 
 **Prioridad media**
